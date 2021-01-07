@@ -1,0 +1,145 @@
+---
+title: Exploring the U.S. National Oceanic and Atmospheric Administration's storm
+  database
+author: "Haitam"
+date: "07/01/2021"
+output: html_document
+---
+
+```{r,message=FALSE}
+library(ggplot2)
+```
+
+
+# Synopsis:
+
+-  Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
+
+
+-  This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. 
+
+-  This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.
+
+-  The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
+
+-  In my analysis I will adress the two question : 
+
+
+  -  Across the United States, which types of events as indicated in the `EVTYPE` variable are most harmful with respect to population health?
+  
+
+  -  Across the United States, which types of events have the greatest economic consequences?
+
+# Data processing:
+
+```{r,cache=TRUE}
+#loading data:
+storm<-read.csv("repdata_data_stormData.csv",sep=",",header = T,
+                na.strings = c("","+","?","-"))
+```
+
+## Exploratory data analysis
+
+
+
+```{r}
+#data variables
+names(storm)
+
+#subsetting the data:
+
+v_storm <- storm[,c('EVTYPE','FATALITIES','INJURIES', 'PROPDMG', 'PROPDMGEXP', 'CROPDMG', 'CROPDMGEXP')]
+
+#data structur:
+str(v_storm)
+
+#missing variables:
+na=sum(is.na(v_storm))
+
+paste("There are",na,"missing variables in my data set")
+
+#transforming evtype to factor:
+v_storm$EVTYPE<-as.factor(v_storm$EVTYPE)
+v_storm$PROPDMGEXP<-as.factor(v_storm$PROPDMGEXP)
+v_storm$CROPDMGEXP<-as.factor(v_storm$CROPDMGEXP)
+
+```
+
+
+### Health perspective:
+
+```{r}
+#aggregating:
+fata<-aggregate(FATALITIES~EVTYPE, v_storm,sum)
+
+fata <- fata[order(-fata$FATALITIES), ][1:20, ]
+
+head(fata)
+
+```
+
+
+```{r}
+#plot
+p1=ggplot(data=fata,aes(x =reorder(EVTYPE,FATALITIES),y=FATALITIES))+
+        geom_bar(stat="identity",fill="tomato")
+
+p2=p1+ theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+p3=p2+xlab("Event Type") + ylab("Fatalities") + ggtitle("Number of fatalities by top 20 Weather Events")
+
+p3
+```
+
+```{r}
+#aggregating:
+injur<-aggregate(INJURIES~EVTYPE, v_storm,sum)
+
+injur <- injur[order(-injur$INJURIES), ][1:20, ]
+
+head(injur)
+
+
+
+#plot
+g1=ggplot(data=injur,aes(x =reorder(EVTYPE,INJURIES),y=INJURIES))+
+        geom_bar(stat="identity",fill="red")
+
+g2=g1+ theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+g3=g2+xlab("Event Type") + ylab("Injuries") + ggtitle("Number of injuries by top 20 Weather Events")
+
+g3
+
+
+```
+
+
+### Economic perspective:
+```{r}
+eco<-aggregate(CROPDMG+PROPDMG~EVTYPE,v_storm,sum)
+
+eco <- eco[order(-eco$`CROPDMG + PROPDMG`), ][1:20, ]
+
+head(eco)
+
+
+#plot
+e1=ggplot(data=eco,aes(x =reorder(EVTYPE,`CROPDMG + PROPDMG`),y=`CROPDMG + PROPDMG`))+
+        geom_bar(stat="identity",fill="green")
+
+e2=e1+ theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+e3=e2+xlab("Event Type") + ylab("Damage($)") + ggtitle("Property & Crop Damages by top 20 Weather Events")
+
+e3
+
+```
+
+
+
+## Results:
+
+-  The data I have provides a strong evidence that **TORNADOs** have the worst consequents not only on the population health *fatalities ans injuries* but also economically.
+
+-  So preparing for severe weather events must take into consideration the need to prioritize resources for many different types of events but more importantly **Tornados**
